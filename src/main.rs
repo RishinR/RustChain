@@ -1,17 +1,21 @@
 mod balances;
 mod system;
 
-mod types {
-    pub type AccountId = String;
-    pub type Balance = u128;
-    pub type BlockNumber = u32;
-    pub type Nonce = u32;
-}
-
 #[derive(Debug)]
 pub struct Runtime {
-    system: system::Pallet<types::AccountId, types::BlockNumber, types::Nonce>,
-    balances: balances::Pallet<types::AccountId, types::Balance>,
+    system: system::Pallet<Runtime>,
+    balances: balances::Pallet<Runtime>,
+}
+
+impl system::Config for Runtime {
+    type AccountId = String;
+    type BlockNumber = u128;
+    type Nonce = u32;
+}
+
+impl balances::Config for Runtime {
+    type AccountId = String;
+    type Balance = u128;
 }
 
 impl Runtime {
@@ -23,7 +27,7 @@ impl Runtime {
     }
 }
 
-fn main() {
+fn main() -> Result<(), &'static str>{
     let mut runtime = Runtime::new();
 
     let alice = "alice".to_string();
@@ -32,13 +36,13 @@ fn main() {
 
     // Genesis
     runtime.balances.set_balance(&alice, 100);
-    runtime.system.inc_block_number();
+    runtime.system.inc_block_number()?;
 
     // Check block number is 1
     assert_eq!(runtime.system.block_number(), 1);
 
     // Increement the nonce of the user
-    runtime.system.inc_nonce(&alice);
+    runtime.system.inc_nonce(&alice)?;
 
     // Transfer funds
     let _ = runtime
@@ -47,7 +51,7 @@ fn main() {
         .map_err(|e| println!("Error: {:?}", e));
 
     // Increement the nonce of the user
-    runtime.system.inc_nonce(&alice);
+    runtime.system.inc_nonce(&alice)?;
 
     let _ = runtime
         .balances
@@ -55,7 +59,9 @@ fn main() {
         .map_err(|e| println!("Error: {:?}", e));
 
     // Increement the nonce of the user
-    runtime.system.inc_nonce(&alice);
+    runtime.system.inc_nonce(&alice)?;
 
     println!("Runtime is {:#?}", runtime);
+
+    Ok(())
 }
